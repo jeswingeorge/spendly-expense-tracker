@@ -122,3 +122,43 @@ def seed_db(db=None):
     conn.commit()
     if db is None:
         conn.close()
+
+
+# ---- Users ----
+def get_user_by_email(email, db=None):
+    """Return the users row matching `email`, or None if there is no match.
+
+    Pass an existing connection via `db` to reuse it (e.g. in tests);
+    otherwise a connection is opened and closed internally.
+    """
+    conn = db or get_db()
+
+    row = conn.execute(
+        "SELECT * FROM users WHERE email = ?", (email,)
+    ).fetchone()
+
+    if db is None:
+        conn.close()
+    return row
+
+
+def create_user(name, email, password, db=None):
+    """Hash `password`, insert a new users row, and return its id.
+
+    Raises sqlite3.IntegrityError if `email` is already registered (the
+    UNIQUE constraint on users.email). Pass an existing connection via `db`
+    to reuse it; otherwise a connection is opened and closed internally.
+    """
+    conn = db or get_db()
+
+    password_hash = generate_password_hash(password)
+    try:
+        cursor = conn.execute(
+            "INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)",
+            (name, email, password_hash),
+        )
+        conn.commit()
+        return cursor.lastrowid
+    finally:
+        if db is None:
+            conn.close()

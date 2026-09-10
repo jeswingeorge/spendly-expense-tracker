@@ -9,9 +9,21 @@ denominated in Indian Rupees (₹). It is a **teaching scaffold**: a step-by-ste
 exercise where large parts are intentionally left unimplemented for a student to build.
 Upstream: https://github.com/campusx-official/spendly
 
-Because of this, the current code is a skeleton. Do not treat stubs or the empty
-`database/db.py` as bugs — they are the assignment. When asked to "implement Step N",
-match the spec in the relevant file's comments and keep the existing style.
+Because of this, most of the code is still a skeleton. Do not treat the remaining
+stubs as bugs — they are the assignment. When asked to "implement Step N", match
+the spec in the relevant file's comments and keep the existing style.
+
+**Completed steps:**
+
+- **Step 1 (database setup)** — `database/db.py` is fully implemented
+  (`get_db()`, `init_db()`, `seed_db()`). See `.claude/specs/01-database-setup.md`.
+  Anything below that still calls `db.py` "empty" is out of date.
+- **Step 2 (registration)** — `POST /register` is implemented: server-side
+  validation, werkzeug password hashing, `create_user()` / `get_user_by_email()`
+  helpers in `database/db.py`, success flash + redirect to `/login`. See
+  `.claude/specs/02-registration.md`. Login/logout and sessions are still stubs.
+
+The remaining steps still apply.
 
 ## Commands
 
@@ -37,16 +49,18 @@ Note the port is **5001**, not Flask's default 5000.
   `/expenses/<id>/edit`, `/expenses/<id>/delete`) that currently return plain strings
   labeled "coming in Step N". There is no blueprint / app-factory structure.
 
-- **`database/db.py`** — intentionally empty except a spec comment. Meant to hold
-  `get_db()` (SQLite connection with `row_factory` + foreign keys on), `init_db()`
-  (`CREATE TABLE IF NOT EXISTS`), and `seed_db()` (sample data). The DB file is
-  `expense_tracker.db` at repo root (gitignored).
+- **`database/db.py`** — implemented in Step 1. Provides `get_db()` (SQLite
+  connection with `row_factory` + `PRAGMA foreign_keys = ON`), `init_db()`
+  (`CREATE TABLE IF NOT EXISTS` for `users` and `expenses`), and `seed_db()`
+  (idempotent demo user + 8 sample expenses). The DB file is `expense_tracker.db`
+  at repo root (gitignored). Feature-specific helpers (e.g. user lookups) are
+  still added here per step, not in route functions.
 
 - **`templates/`** — Jinja2. Every page `{% extends "base.html" %}` and fills
   `{% block content %}` (plus optional `head` / `scripts` blocks). `base.html` owns the
   nav, footer, font `<link>`s, and the global CSS/JS includes. Use `url_for()` for all
-  internal links and static assets. Auth forms POST to `/register` and `/login`, but the
-  handlers for those methods don't exist yet.
+  internal links and static assets. `POST /register` is implemented (Step 2); the
+  `POST /login` handler does not exist yet.
 
 - **`static/css/style.css`** — a hand-written design system, no CSS framework. Colors,
   fonts, spacing, and radii are CSS custom properties on `:root` (`--ink*`, `--paper*`,
@@ -70,7 +84,7 @@ Note the port is **5001**, not Flask's default 5000.
 | Route | Status |
 |---|---|
 | `GET /` | Implemented — renders `landing.html` |
-| `GET /register` | Implemented — renders `register.html` |
+| `GET, POST /register` | Implemented — Step 2 (registration) |
 | `GET /login` | Implemented — renders `login.html` |
 | `GET /logout` | Stub — Step 3 |
 | `GET /profile` | Stub — Step 4 |
@@ -89,6 +103,6 @@ Note the port is **5001**, not Flask's default 5000.
 - **Never put DB logic in route functions** — it belongs in `database/db.py`
 - **Never install new packages** mid-feature without flagging it — keep `requirements.txt` in sync
 - **Never use JS frameworks** — the frontend is intentionally vanilla
-- **`database/db.py` is currently empty** — do not assume helpers exist until the step that implements them
+- **`database/db.py` is implemented (Step 1)** — `get_db()`, `init_db()`, `seed_db()` exist; do not assume *other* helpers exist until the step that implements them
 - **FK enforcement is manual** — SQLite foreign keys are off by default; `get_db()` must run `PRAGMA foreign_keys = ON` on every connection
 - The app runs on **port 5001**, not the Flask default 5000 — don't change this
