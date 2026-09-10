@@ -1,7 +1,8 @@
 import os
 import sqlite3
 
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, session, g
+from werkzeug.security import check_password_hash
 
 from database.db import (
     get_db,
@@ -9,10 +10,21 @@ from database.db import (
     seed_db,
     create_user,
     get_user_by_email,
+    get_user_by_id,
 )
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-change-me")
+
+
+# ------------------------------------------------------------------ #
+# Session                                                             #
+# ------------------------------------------------------------------ #
+
+@app.before_request
+def load_logged_in_user():
+    user_id = session.get("user_id")
+    g.user = get_user_by_id(user_id) if user_id else None
 
 
 # ------------------------------------------------------------------ #
@@ -69,9 +81,40 @@ def register():
     return render_template("register.html")
 
 
-@app.route("/login")
+@app.route("/login", methods=["GET", "POST"])
 def login():
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
+
+        if not email or not password:
+            return render_template(
+                "login.html",
+                error="Email and password are required.",
+                email=email,
+            )
+
+        user = get_user_by_email(email)
+        if user is None or not check_password_hash(user["password_hash"], password):
+            return render_template(
+                "login.html",
+                error="Invalid email or password.",
+                email=email,
+            )
+
+        session.clear()
+        session["user_id"] = user["id"]
+        flash(f"Welcome back, {user['name']}.", "success")
+        return redirect(url_for("landing"))
+
     return render_template("login.html")
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    flash("You have been signed out.", "success")
+    return redirect(url_for("login"))
 
 
 @app.route("/terms")
@@ -87,11 +130,6 @@ def privacy():
 # ------------------------------------------------------------------ #
 # Placeholder routes — students will implement these                  #
 # ------------------------------------------------------------------ #
-
-@app.route("/logout")
-def logout():
-    return "Logout — coming in Step 3"
-
 
 @app.route("/profile")
 def profile():
