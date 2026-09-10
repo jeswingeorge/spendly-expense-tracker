@@ -142,6 +142,23 @@ def get_user_by_email(email, db=None):
     return row
 
 
+def get_user_by_id(user_id, db=None):
+    """Return the users row matching `user_id`, or None if there is no match.
+
+    Pass an existing connection via `db` to reuse it (e.g. in tests);
+    otherwise a connection is opened and closed internally.
+    """
+    conn = db or get_db()
+
+    row = conn.execute(
+        "SELECT * FROM users WHERE id = ?", (user_id,)
+    ).fetchone()
+
+    if db is None:
+        conn.close()
+    return row
+
+
 def create_user(name, email, password, db=None):
     """Hash `password`, insert a new users row, and return its id.
 
